@@ -35,7 +35,7 @@ RUN cd "/home/xclient/.wine/drive_c/Program Files/Inno Setup 6/Languages" \
     && curl -L "https://api.github.com/repos/jrsoftware/issrc/tarball/is-6_2_2" \
     | tar xz --strip-components=4 --wildcards "*/Files/Languages/Unofficial/*.isl"
 
-FROM debian:buster-slim
+FROM debian:bookworm-slim
 
 RUN addgroup --system xusers \
     && adduser \
