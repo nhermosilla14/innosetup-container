@@ -1,4 +1,4 @@
-FROM amake/wine:latest as inno
+FROM amake/wine:buster as inno
 MAINTAINER Aaron Madlon-Kay <aaron@madlon-kay.com>
 
 USER root
