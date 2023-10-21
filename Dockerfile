@@ -1,4 +1,4 @@
-FROM amake/wine:bookworm as inno
+FROM amake/wine:buster as inno
 MAINTAINER Aaron Madlon-Kay <aaron@madlon-kay.com>
 
 USER root
@@ -35,7 +35,7 @@ RUN cd "/home/xclient/.wine/drive_c/Program Files/Inno Setup 6/Languages" \
     && curl -L "https://api.github.com/repos/jrsoftware/issrc/tarball/is-6_2_2" \
     | tar xz --strip-components=4 --wildcards "*/Files/Languages/Unofficial/*.isl"
 
-FROM debian:bookworm-slim
+FROM debian:buster-slim
 
 RUN addgroup --system xusers \
     && adduser \
