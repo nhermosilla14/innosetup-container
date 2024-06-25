@@ -5,7 +5,7 @@ docker_tag := $(user)/innosetup:$(git_branch)
 .PHONY: build
 build: ## Build the Docker image
 build:
-	docker build -t $(docker_tag) .
+	docker build --pull -t $(docker_tag) .
 
 .PHONY: test
 test: ## Test the Docker image
