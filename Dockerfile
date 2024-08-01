@@ -1,5 +1,7 @@
 FROM amake/wine:buster AS inno
 
+ARG VERSION=6.3.3
+
 USER root
 
 RUN apt-get update \
@@ -25,13 +27,13 @@ RUN wine reg add 'HKEY_CURRENT_USER\Software\Wine' /v ShowDotFiles /d Y \
     && while [ ! -f /home/xclient/.wine/user.reg ]; do sleep 1; done
 
 # Install Inno Setup binaries
-RUN curl -SL "https://files.jrsoftware.org/is/6/innosetup-6.3.3.exe" -o is.exe \
+RUN curl -SL "https://files.jrsoftware.org/is/6/innosetup-$VERSION.exe" -o is.exe \
     && wine-x11-run wine is.exe /SP- /VERYSILENT /ALLUSERS /SUPPRESSMSGBOXES /DOWNLOADISCRYPT=1 \
     && rm is.exe
 
 # Install unofficial languages
-RUN cd "/home/xclient/.wine/drive_c/Program Files/Inno Setup 6/Languages" \
-    && curl -L "https://api.github.com/repos/jrsoftware/issrc/tarball/is-6_3_3" \
+RUN cd "/home/xclient/.wine/drive_c/Program Files/Inno Setup $(echo $VERSION | cut -d . -f 1)/Languages" \
+    && curl -L "https://api.github.com/repos/jrsoftware/issrc/tarball/is-$(echo $VERSION | sed 's/\./_/g')" \
     | tar xz --strip-components=4 --wildcards "*/Files/Languages/Unofficial/*.isl"
 
 FROM debian:buster-slim
