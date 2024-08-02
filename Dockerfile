@@ -27,7 +27,7 @@ RUN wine reg add 'HKEY_CURRENT_USER\Software\Wine' /v ShowDotFiles /d Y \
     && while [ ! -f /home/xclient/.wine/user.reg ]; do sleep 1; done
 
 # Install Inno Setup binaries
-RUN curl -SL "https://files.jrsoftware.org/is/6/innosetup-$VERSION.exe" -o is.exe \
+RUN curl -SL "https://files.jrsoftware.org/is/$(echo $VERSION | sed 's/\./_/g')/innosetup-$VERSION.exe" -o is.exe \
     && wine-x11-run wine is.exe /SP- /VERYSILENT /ALLUSERS /SUPPRESSMSGBOXES /DOWNLOADISCRYPT=1 \
     && rm is.exe
 
