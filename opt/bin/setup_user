@@ -1,0 +1,49 @@
+#!/bin/sh
+
+set -e
+
+XCLIENT_UID=$(id -u xclient)
+XCLIENT_GID=$(id -g xclient)
+
+# If not root, try to run the main script directly
+if [ "$(id -u)" -ne 0 ]; then
+    # If uid and gid are the same as xclient, then it's all good
+    if [ "$XCLIENT_UID" -eq "$(id -u)" ] && [ "$XCLIENT_GID" -eq "$(id -g)" ]; then
+        exec "$@"
+    else
+        # Not root, but not xclient either,
+        # so we can't fix permissions at home
+        echo "Not root, but not xclient, so we can't fix permissions at home"
+        echo "If you want to run this container in a rootless fashion, use the --userns keep-id:uid=999,gid=999 option"
+        exit 1
+    fi
+else
+    # Running as root, so we need to check if PUID and PGID are set
+    if [ -z "$PUID" ]; then
+        # No PUID set, so let's try to infer it from the current directory
+        PUID=$(stat -c %u .)
+    fi
+
+    if [ -z "$PGID" ]; then
+        # No PGID set, so let's try to infer it from the current directory
+        PGID=$(stat -c %g .)
+    fi
+    
+    # If PUID and PGID are both 0, then the root user is the only
+    # one with permissions to read/write to the current directory
+    # so we can run the main script directly
+    if [ "$PUID" = "0" ] && [ "$PGID" = "0" ]; then
+        chown -R 0:0 /home/xclient
+        exec "$@"
+    else
+        # Modify the xclient user and group
+        usermod -u "$PUID" xclient > /dev/null 2>&1
+        groupmod -g "$PGID" xclient > /dev/null 2>&1        
+    
+        # Fix permissions on /home/xclient
+        chown -R xclient:xclient /home/xclient
+        
+        # Run main script with args as the xclient user
+        exec runuser -u xclient -- "$@"
+    fi
+fi
