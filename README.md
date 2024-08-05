@@ -53,7 +53,7 @@ This is because, by default, Podman runs as rootless, so it works by mapping the
 
 **Note**: If you try to override the user and group IDs of the container user in rootless mode, you will get an error message. This is because the container will do everything, except changing the working directory permissions, so the internal `xclient` user will not be able to access the files in the working directory (because, even if you set them to the current user's IDs, they will get mapped to other user IDs in the host user namespace).
 
-# Available images
+# Available images (still WIP)
 
 | Architecture (winearch) | Base image | First version | Image tag example |
 | ----------------------- | ---------- | ------------- | ----------------- |
