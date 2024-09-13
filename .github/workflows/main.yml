@@ -39,8 +39,8 @@ jobs:
           image: ${{ env.IMAGE_NAME }}-x86 
           tags: ${{ github.sha }}
           build-args:
-            VERSION="${{ steps.semver.outputs.semver }}"
-            WINEARCH="win64"
+            VERSION=${{ steps.semver.outputs.semver }}
+            WINEARCH=win32
           
       # Push the image to GHCR (Image Registry)
       - name: Push To GHCR
@@ -101,8 +101,8 @@ jobs:
           image: ${{ env.IMAGE_NAME }}-x64
           tags: ${{ github.sha }}
           build-args:
-            VERSION="${{ steps.semver.outputs.semver }}"
-            WINEARCH="win64"
+            VERSION=${{ steps.semver.outputs.semver }}
+            WINEARCH=win64
           
       # Push the image to GHCR (Image Registry)
       - name: Push To GHCR
