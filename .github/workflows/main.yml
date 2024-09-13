@@ -100,7 +100,7 @@ jobs:
             ./Containerfile
           image: ${{ env.IMAGE_NAME }}-x64
           tags: ${{ github.sha }}
-          build-args:
+          build-args: |
             VERSION=${{ steps.semver.outputs.semver }}
             WINEARCH=win64
           
