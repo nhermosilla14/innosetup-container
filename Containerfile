@@ -1,10 +1,12 @@
 
 ARG BASE_IMAGE=bookworm
+ARG VERSION=6.3.3
+ARG WINEARCH=win32
 
 FROM amake/wine:$BASE_IMAGE AS builder
 
-ARG VERSION=6.3.3
-ARG WINEARCH=win32
+ARG VERSION
+ARG WINEARCH
 
 USER root
 
@@ -54,6 +56,9 @@ RUN . /home/xclient/.innosetup-env \
 
 FROM debian:bookworm-slim AS runtime
 
+ARG VERSION
+ARG WINEARCH
+
 RUN groupadd -g 999 xclient && useradd -m -g xclient -u 999 -s /bin/bash xclient
 
 # Install some tools required for creating the image
@@ -77,5 +82,5 @@ RUN mkdir /work && chown xclient: -R /work
 ENV HOME=/home/xclient
 ENV WINEPREFIX=/home/xclient/.wine
 
-WORKDIR /work
+WORKDIR /app
 ENTRYPOINT ["setup_user", "iscc"]
