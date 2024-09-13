@@ -58,8 +58,8 @@ jobs:
       - name: Add semver tags
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.semver }}
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:${{ steps.semver.outputs.semver }}
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:latest
           echo "IMAGE_TAGS=${{ steps.semver.outputs.semver }}" >> "$GITHUB_ENV"
       # If this is a semver tag, also push as latest and major.minor.patch
       - name: Push Semver Tags
@@ -120,8 +120,8 @@ jobs:
       - name: Add semver tags
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.semver }}
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:${{ steps.semver.outputs.semver }}
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:latest
           echo "IMAGE_TAGS=${{ steps.semver.outputs.semver }}" >> "$GITHUB_ENV"
       # If this is a semver tag, also push as latest and major.minor.patch
       - name: Push Semver Tags
