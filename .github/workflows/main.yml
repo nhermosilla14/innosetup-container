@@ -38,7 +38,7 @@ jobs:
             ./Containerfile
           image: ${{ env.IMAGE_NAME }}-x86 
           tags: ${{ github.sha }}
-          build-args:
+          build-args: |
             VERSION=${{ steps.semver.outputs.semver }}
             WINEARCH=win32
           
