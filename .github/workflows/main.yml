@@ -74,9 +74,25 @@ jobs:
           podman push --disable-content-trust \
             "${IMAGE_NAME}-x86:latest" \
             "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:latest"
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          printf '%s' "$DOCKERHUB_TOKEN" | podman login docker.io \
+            --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push x86 images to Docker Hub
+        run: |
+          podman push --disable-content-trust \
+            "${IMAGE_NAME}-x86:${{ steps.semver.outputs.semver }}" \
+            "docker.io/${{ secrets.DOCKERHUB_USERNAME }}/innosetup-container-x86:${{ steps.semver.outputs.semver }}"
+          podman push --disable-content-trust \
+            "${IMAGE_NAME}-x86:latest" \
+            "docker.io/${{ secrets.DOCKERHUB_USERNAME }}/innosetup-container-x86:latest"
       - name: Echo outputs
         run: |
-          echo "Pushed x86 image tags"
+          echo "Pushed x86 image tags to GHCR and Docker Hub"
 
   build_x64:
     name: Build and push x64 image
@@ -127,6 +143,22 @@ jobs:
           podman push --disable-content-trust \
             "${IMAGE_NAME}-x64:latest" \
             "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:latest"
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          printf '%s' "$DOCKERHUB_TOKEN" | podman login docker.io \
+            --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push x64 images to Docker Hub
+        run: |
+          podman push --disable-content-trust \
+            "${IMAGE_NAME}-x64:${{ steps.semver.outputs.semver }}" \
+            "docker.io/${{ secrets.DOCKERHUB_USERNAME }}/innosetup-container-x64:${{ steps.semver.outputs.semver }}"
+          podman push --disable-content-trust \
+            "${IMAGE_NAME}-x64:latest" \
+            "docker.io/${{ secrets.DOCKERHUB_USERNAME }}/innosetup-container-x64:latest"
       - name: Echo outputs
         run: |
-          echo "Pushed x64 image tags"
+          echo "Pushed x64 image tags to GHCR and Docker Hub"
