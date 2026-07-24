@@ -61,6 +61,11 @@ This behavior differs from the `amake/innosetup` images, which always use the sa
 | wine32 | `amake/wine:bookworm` | `6.2.2` | `ghcr.io/nhermosilla14/innosetup-container-x86:6.2.2` |
 | wine64 | `amake/wine:wine64-bookworm` | `6.2.2` | `ghcr.io/nhermosilla14/innosetup-container-x64:6.2.2` |
 
+The images are also published on Docker Hub:
+
+- [x86 image](https://hub.docker.com/r/nhermosilla14/innosetup-container-x86)
+- [x64 image](https://hub.docker.com/r/nhermosilla14/innosetup-container-x64)
+
 # Future plans
 - Upgrade base images to a newer Debian release and/or Alpine Linux.
 - Add support for other architectures (e.g. arm64).
