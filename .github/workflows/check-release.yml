@@ -1,0 +1,69 @@
+name: Check for Inno Setup release
+
+on:
+  schedule:
+    # 00:00 GMT-4.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install skopeo
+        run: sudo apt-get update && sudo apt-get install --yes skopeo
+
+      - name: Check latest releases and dispatch builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api 'repos/jrsoftware/issrc/releases?per_page=3' --jq '
+            .[]
+            | select(.draft == false and .prerelease == false)
+            | select(.tag_name | test("^is-[0-9]+_[0-9]+_[0-9]+$"))
+            | select(.name | test("(alpha|beta|preview|rc)"; "i") | not)
+            | (.tag_name | sub("^is-"; "") | gsub("_"; ".")) as $version
+            | ([.assets[].name] | {
+                generic: index("innosetup-" + $version + ".exe"),
+                x86: index("innosetup-" + $version + "-x86.exe"),
+                x64: index("innosetup-" + $version + "-x64.exe")
+              }) as $assets
+            | select($assets.generic != null or ($assets.x86 != null and $assets.x64 != null))
+            | [.tag_name, .name]
+            | @tsv
+          ' | while IFS=$'\t' read -r upstream_tag release_name; do
+            version=${upstream_tag#is-}
+            version=${version//_/.}
+            tag="v$version"
+            image_prefix="ghcr.io/${GITHUB_REPOSITORY,,}"
+
+            x86_exists=true
+            x64_exists=true
+            skopeo inspect "docker://$image_prefix-x86:$version" >/dev/null 2>&1 || x86_exists=false
+            skopeo inspect "docker://$image_prefix-x64:$version" >/dev/null 2>&1 || x64_exists=false
+
+            if [ "$x86_exists" = true ] && [ "$x64_exists" = true ]; then
+              echo "$release_name ($version) is already published"
+              continue
+            fi
+
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+              echo "$tag exists; dispatching the missing image build"
+            else
+              echo "Tagging $release_name as $tag"
+              git tag --annotate "$tag" --message "Release $tag"
+              git push origin "$tag"
+            fi
+
+            gh workflow run main.yml --ref main --field "version=$version"
+          done

@@ -1,5 +1,9 @@
 .DS_Store
 
+# local agent tooling
+.enola/
+.serena/
+
 # no wine / windows executables
 *.exe
 *.msi

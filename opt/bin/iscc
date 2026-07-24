@@ -2,6 +2,8 @@
 
 set -eu
 
+. /home/xclient/.innosetup-env
+
 escone() {
     printf %s\\n "$1" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/"
 }
@@ -23,7 +25,7 @@ winenv() {
 
 PROGFILES_PATH="$(winepath -u "$(winenv %PROGRAMFILES%)")"
 
-INNO_BIN="Inno Setup 6/ISCC.exe"
+INNO_BIN="Inno Setup $INNO_MAJOR_VERSION/ISCC.exe"
 INNO_PATH="${PROGFILES_PATH}/${INNO_BIN}"
 
 eval set -- "$(winpaths "$@")"

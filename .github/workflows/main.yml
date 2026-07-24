@@ -4,6 +4,12 @@ on:
   push:
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Inno Setup version to package
+        required: true
+        type: string
 
 env:
   IMAGE_REGISTRY: ghcr.io
@@ -23,12 +29,15 @@ jobs:
       - name: Checkout Push to Registry action
         uses: actions/checkout@v4
 
-      - name: Parse semver tag
+      - name: Determine Inno Setup version
         id: semver
-        if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          echo semver=$( echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//' ) >> "$GITHUB_OUTPUT"
-          echo "SEMVER=$( echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//' )" >> "$GITHUB_ENV"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            version='${{ inputs.version }}'
+          else
+            version="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "semver=$version" >> "$GITHUB_OUTPUT"
     
       - name: Buildah Build
         id: build_image
@@ -55,15 +64,7 @@ jobs:
           extra-args: |
             --disable-content-trust
 
-      - name: Add semver tags
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:${{ steps.semver.outputs.semver }}
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:latest
-          echo "IMAGE_TAGS=${{ steps.semver.outputs.semver }}" >> "$GITHUB_ENV"
-      # If this is a semver tag, also push as latest and major.minor.patch
-      - name: Push Semver Tags
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Push version and latest tags
         uses: redhat-actions/push-to-registry@v2
         with:
           image: ${{ steps.build_image.outputs.image }}
@@ -85,12 +86,15 @@ jobs:
       - name: Checkout Push to Registry action
         uses: actions/checkout@v4
 
-      - name: Parse semver tag
+      - name: Determine Inno Setup version
         id: semver
-        if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          echo semver=$( echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//' ) >> "$GITHUB_OUTPUT"
-          echo "SEMVER=$( echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//' )" >> "$GITHUB_ENV"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            version='${{ inputs.version }}'
+          else
+            version="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "semver=$version" >> "$GITHUB_OUTPUT"
     
       - name: Buildah Build
         id: build_image
@@ -117,15 +121,7 @@ jobs:
           extra-args: |
             --disable-content-trust
 
-      - name: Add semver tags
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:${{ steps.semver.outputs.semver }}
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:latest
-          echo "IMAGE_TAGS=${{ steps.semver.outputs.semver }}" >> "$GITHUB_ENV"
-      # If this is a semver tag, also push as latest and major.minor.patch
-      - name: Push Semver Tags
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Push version and latest tags
         uses: redhat-actions/push-to-registry@v2
         with:
           image: ${{ steps.build_image.outputs.image }}

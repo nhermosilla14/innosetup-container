@@ -1,6 +1,6 @@
 
 ARG BASE_IMAGE=bookworm
-ARG VERSION=6.3.3
+ARG VERSION=7.0.2
 ARG WINEARCH=win32
 
 FROM amake/wine:$BASE_IMAGE AS builder
@@ -42,14 +42,18 @@ RUN wine reg add 'HKEY_CURRENT_USER\Software\Wine' /v ShowDotFiles /d Y \
 
 # Install Inno Setup binaries
 RUN . /home/xclient/.innosetup-env \
-    && curl -SL "https://github.com/jrsoftware/issrc/releases/download/is-$INNO_VERSION_UNDERSCORES/innosetup-$VERSION.exe" -o is.exe \
+    && INSTALLER_SUFFIX= \
+    && if [ "$WINEARCH" = win64 ]; then INSTALLER_SUFFIX=-x64; else INSTALLER_SUFFIX=-x86; fi \
+    && INSTALLER_URL="https://github.com/jrsoftware/issrc/releases/download/is-$INNO_VERSION_UNDERSCORES/innosetup-$VERSION$INSTALLER_SUFFIX.exe" \
+    && if ! curl -fSL "$INSTALLER_URL" -o is.exe; then \
+         curl -fSL "https://github.com/jrsoftware/issrc/releases/download/is-$INNO_VERSION_UNDERSCORES/innosetup-$VERSION.exe" -o is.exe; \
+       fi \
     && wine-x11-run wine is.exe /SP- /VERYSILENT /ALLUSERS /SUPPRESSMSGBOXES /DOWNLOADISCRYPT=1 \
     && rm is.exe
 
 # Install unofficial languages
 RUN . /home/xclient/.innosetup-env \
-    && [ $WINEARCH = win32 ] \
-    && PROGRAM_FILES="/home/xclient/.wine/drive_c/Program Files" || PROGRAM_FILES="/home/xclient/.wine/drive_c/Program Files (x86)" \
+    && PROGRAM_FILES="$(winepath -u "$(wine cmd /c 'echo %PROGRAMFILES%' | tr -d '\r')")" \
     && cd "$PROGRAM_FILES/Inno Setup $INNO_MAJOR_VERSION/Languages" \
     && curl -L "https://api.github.com/repos/jrsoftware/issrc/tarball/refs/tags/is-$INNO_VERSION_UNDERSCORES" \
     | tar xz --strip-components=4 --wildcards "*/Files/Languages/Unofficial/*.isl"
