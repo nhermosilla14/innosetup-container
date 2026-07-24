@@ -2,8 +2,8 @@ name: Check for Inno Setup release
 
 on:
   schedule:
-    # 00:00 GMT-4.
-    - cron: '0 4 * * *'
+    # 00:17 GMT-4.
+    - cron: '17 4 * * *'
   workflow_dispatch:
 
 permissions:
