@@ -50,7 +50,7 @@ jobs:
           containerfiles: |
             ./Containerfile
           image: ${{ env.IMAGE_NAME }}-x86 
-          tags: ${{ github.sha }}
+          tags: ${{ github.sha }} ${{ steps.semver.outputs.semver }} latest
           build-args: |
             VERSION=${{ steps.semver.outputs.semver }}
             WINEARCH=win32
@@ -63,20 +63,17 @@ jobs:
           printf '%s' "$REGISTRY_PASSWORD" | podman login "$IMAGE_REGISTRY" \
             --username "$REGISTRY_USER" --password-stdin
           podman push --disable-content-trust \
-            "${{ steps.build_image.outputs.image }}:${{ github.sha }}" \
+            "${IMAGE_NAME}-x86:${{ github.sha }}" \
             "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:${{ github.sha }}"
-
-      - name: Add version and latest tags
-        run: |
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:${{ steps.semver.outputs.semver }}
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:latest
 
       - name: Push version and latest tags
         run: |
           podman push --disable-content-trust \
-            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:${{ steps.semver.outputs.semver }}"
+            "${IMAGE_NAME}-x86:${{ steps.semver.outputs.semver }}" \
+            "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:${{ steps.semver.outputs.semver }}"
           podman push --disable-content-trust \
-            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:latest"
+            "${IMAGE_NAME}-x86:latest" \
+            "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:latest"
       - name: Echo outputs
         run: |
           echo "Pushed x86 image tags"
@@ -106,7 +103,7 @@ jobs:
           containerfiles: |
             ./Containerfile
           image: ${{ env.IMAGE_NAME }}-x64
-          tags: ${{ github.sha }}
+          tags: ${{ github.sha }} ${{ steps.semver.outputs.semver }} latest
           build-args: |
             VERSION=${{ steps.semver.outputs.semver }}
             WINEARCH=win64
@@ -119,20 +116,17 @@ jobs:
           printf '%s' "$REGISTRY_PASSWORD" | podman login "$IMAGE_REGISTRY" \
             --username "$REGISTRY_USER" --password-stdin
           podman push --disable-content-trust \
-            "${{ steps.build_image.outputs.image }}:${{ github.sha }}" \
+            "${IMAGE_NAME}-x64:${{ github.sha }}" \
             "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:${{ github.sha }}"
-
-      - name: Add version and latest tags
-        run: |
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:${{ steps.semver.outputs.semver }}
-          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:latest
 
       - name: Push version and latest tags
         run: |
           podman push --disable-content-trust \
-            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:${{ steps.semver.outputs.semver }}"
+            "${IMAGE_NAME}-x64:${{ steps.semver.outputs.semver }}" \
+            "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:${{ steps.semver.outputs.semver }}"
           podman push --disable-content-trust \
-            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:latest"
+            "${IMAGE_NAME}-x64:latest" \
+            "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:latest"
       - name: Echo outputs
         run: |
           echo "Pushed x64 image tags"
