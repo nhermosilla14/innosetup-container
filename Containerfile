@@ -42,7 +42,7 @@ RUN wine reg add 'HKEY_CURRENT_USER\Software\Wine' /v ShowDotFiles /d Y \
 
 # Install Inno Setup binaries
 RUN . /home/xclient/.innosetup-env \
-    && curl -SL "https://files.jrsoftware.org/is/$INNO_MAJOR_VERSION/innosetup-$VERSION.exe" -o is.exe \
+    && curl -SL "https://github.com/jrsoftware/issrc/releases/download/is-$INNO_VERSION_UNDERSCORES/innosetup-$VERSION.exe" -o is.exe \
     && wine-x11-run wine is.exe /SP- /VERYSILENT /ALLUSERS /SUPPRESSMSGBOXES /DOWNLOADISCRYPT=1 \
     && rm is.exe
 
@@ -51,7 +51,7 @@ RUN . /home/xclient/.innosetup-env \
     && [ $WINEARCH = win32 ] \
     && PROGRAM_FILES="/home/xclient/.wine/drive_c/Program Files" || PROGRAM_FILES="/home/xclient/.wine/drive_c/Program Files (x86)" \
     && cd "$PROGRAM_FILES/Inno Setup $INNO_MAJOR_VERSION/Languages" \
-    && curl -L "https://api.github.com/repos/jrsoftware/issrc/tarball/is-$INNO_VERSION_UNDERSCORES" \
+    && curl -L "https://api.github.com/repos/jrsoftware/issrc/tarball/refs/tags/is-$INNO_VERSION_UNDERSCORES" \
     | tar xz --strip-components=4 --wildcards "*/Files/Languages/Unofficial/*.isl"
 
 FROM debian:bookworm-slim AS runtime
