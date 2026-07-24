@@ -2,19 +2,19 @@
 An easy way to create Inno Setup installer packages for Microsoft Windows directly from your Linux or macOS box.
 
 # Usage
-Run in interactive mode with your source root bound to `/app`. Just like with the `amake/innosetup` images, specify your setup script as the command, so you can run:
+Run in interactive mode with your source root bound to `/app`. As with the `amake/innosetup` images, specify your setup script as the command:
 
 ```bash
 docker run --rm -i -v $PWD:/app:Z ghcr.io/nhermosilla14/innosetup-container-x86:latest helloworld.iss
 ```
 
-Unlike with the `amake/innosetup` images, with this image the command above will first guess the correct user ID and group ID of the host user (based on the owner of the /app directory), and then make the IDs of the `xclient` user match those of the host user. This means that the container user will have the same UID and GID as the host user, and the container will be able to read and write files in the working directory without any issues (which can be problematic if running this in a CI/CD pipeline). In this image you can also override this, by setting the `PUID` and `PGID` environment variables to the desired values:
+Unlike the `amake/innosetup` images, this image first guesses the host user's UID and GID from the owner of the `/app` directory, then makes the `xclient` user's IDs match them. This allows the container to read and write files in the working directory without permission issues, which can be especially useful in CI/CD pipelines. You can override this behavior by setting the `PUID` and `PGID` environment variables:
 
 ```bash
 docker run --rm -i -v $PWD:/app:Z -e PUID=$(id -u) -e PGID=$(id -g) ghcr.io/nhermosilla14/innosetup-container-x86:latest helloworld.iss
 ```
 
-This will make sure the output files are owned by the set user/group id, instead of guessing IDs. 
+This ensures that the output files are owned by the specified user and group instead of guessed IDs.
 
 In Podman you could already do this by using the user namespace mapping feature:
 
@@ -22,23 +22,23 @@ In Podman you could already do this by using the user namespace mapping feature:
 podman run --rm -i -v $PWD:/app:Z --userns keep-id:uid=999,gid=999 ghcr.io/nhermosilla14/innosetup-container-x86:latest helloworld.iss
 ```
 
-The only issue with this approach is that you must know the UID and GID of the container user, so it's not very convenient, unless you know for sure those two. That why I've chosen to leave them as 999 by default. Now, given this image tries to guess the user ID and group ID of the host user, if you try to run the container with the same command as in the first Docker example, it will do something quite different, but ultimately it will work just fine:
+The only issue with this approach is that you must know the container user's UID and GID, so it is not very convenient unless you know both values. That is why the default values are 999. Because this image tries to guess the host user's UID and GID, running the container with the same command as in the first Docker example behaves differently, but still works:
 
 ```bash
-podman run --rm -i -v $PWD:/app:Z  ghcr.io/nhermosilla14/innosetup-container-x86:latest helloworld.iss
+podman run --rm -i -v $PWD:/app:Z ghcr.io/nhermosilla14/innosetup-container-x86:latest helloworld.iss
 ```
 
-This is because, by default, Podman runs as rootless, so it works by mapping the user namespace of the host to the container, particularly mapping the container `root` user to the current host user. In this case, the "guessed" user ID and group ID of the host user will be those of the `root` user, and the container will be able to read and write files in the working directory without any issues. The actual IDs in the "outside" world will be the same as the host user, so your permissions will still be correct.
+By default, Podman runs rootless and maps the host user namespace to the container, including mapping the container's `root` user to the current host user. In this case, the "guessed" UID and GID are those of `root`, so the container can read and write files in the working directory without permission issues. The IDs outside the container remain those of the host user, so permissions stay correct.
 
-**Note**: If you try to override the user and group IDs of the container user in rootless mode, you will get an error message. This is because the container will do everything, except changing the working directory permissions, so the internal `xclient` user will not be able to access the files in the working directory (because, even if you set them to the current user's IDs, they will get mapped to other user IDs in the host user namespace).
+**Note**: If you override the container user's UID and GID in rootless mode, you will get an error. The container can do everything except change the working directory permissions, so the internal `xclient` user cannot access the working directory. Even if you set the IDs to those of the current user, they are mapped to different IDs in the host user namespace.
 
 
 # Differences from the amake/innosetup images
-These images are intended to be used as a near drop-in replacement for the `amake/innosetup` images(https://github.com/amake/innosetup-docker), so they retain the same functionality, but with the following differences:
+These images are intended to be used as a near drop-in replacement for the [`amake/innosetup` images](https://github.com/amake/innosetup-docker). They retain the same functionality, with the following differences:
 
-- **Image tag**: Each image is tagged based on the architecture supported, but also the version of the Inno Setup installer. For example, the `ghcr.io/nhermosilla14/innosetup-container-x86:6.3.3` image contains the Inno Setup 6.3.3 installer for 32-bit Windows. This allows you to be sure that the installer you are using is compatible with the Windows version you are targeting, and also prevents you from keeping an old version of Inno Setup around without ever knowing it (because the amake/innosetup images are always tagged the same, regardless of the version of Inno Setup they contain).
+- **Image tag**: Each image is tagged with both its supported architecture and the Inno Setup version. For example, the `ghcr.io/nhermosilla14/innosetup-container-x86:7.0.2` image contains Inno Setup 7.0.2 for 32-bit Windows. This makes the packaged version explicit and avoids unknowingly keeping an old Inno Setup version, as happens with the unversioned `amake/innosetup` tags. For Inno Setup 7 and later, the build uses the architecture-specific installer assets published by the upstream project.
 
-- **PUID and PGID**: Two environment variables are available to control the user ID and group ID of the container user. These are `PUID` and `PGID`, and they are used to set the UID and GID of the `xclient` user, which is used to run the Inno Setup installer. If these variables are not set, the behaviour falls back to one of the following:
+- **PUID and PGID**: Two environment variables control the container user's UID and GID. These are `PUID` and `PGID`, and they set the IDs of the `xclient` user that runs Inno Setup. If these variables are not set, the behavior falls back to one of the following:
 
     - If the current user is not `root`, then the container will check if the user ID and group ID match the default user ID and group ID of the container. If they do, then the container will run the main script as the `xclient` user as-is.
 
@@ -48,11 +48,11 @@ These images are intended to be used as a near drop-in replacement for the `amak
 
     - If the current user is `root`, there are no PUID and PGID environment variables set, and the current directory attributes show it belongs to the root user, then the container will run the main script as the `root` user.
 
-This behaviour is different from the `amake/innosetup` images (which always use the same user ID and group ID, although that not explicitly documented or enforced). The behaviour in this image was change to make it easier to use without messing with the permissions of the working directory, and to make it possible to run the container as both rootless and rootful with the same command.
+This behavior differs from the `amake/innosetup` images, which always use the same UID and GID, although that is not explicitly documented or enforced. This image was changed to make it easier to use without altering the working directory's permissions and to support both rootless and rootful execution with the same command.
 
-- **Automatic deployment**: The Dockerfile and accompanying scripts are designed to be used with GitHub Actions to automatically build and push new images to the GitHub Container Registry whenever a new version of Inno Setup is released. This is done by periodically checking the Inno Setup website for new versions, and then building and pushing the corresponding image. This check is done ever **Sunday at 16:00 UTC**, and the images are pushed to the `ghcr.io/nhermosilla14` namespace.
+- **Automatic deployment**: GitHub Actions checks the [Inno Setup releases](https://github.com/jrsoftware/issrc/releases) every day at **04:00 UTC**, which is midnight at the fixed GMT-4 offset. It examines the three most recent releases, ignores drafts, prereleases, and releases identified as alpha, beta, preview, or release candidates, and checks that the corresponding images are not already present in GHCR. Missing versions are tagged and dispatched directly to the image build workflow. Images are pushed to the `ghcr.io/nhermosilla14` namespace.
 
-- **License**: The original work is licensed under the CC0 license, this is GPLv3 licensed. See the [License](#license) section for more information.
+- **License**: The original work is licensed under CC0; this project is licensed under GPLv3. See the [Licenses](#licenses) section for more information.
 
 # Available images
 
@@ -62,17 +62,16 @@ This behaviour is different from the `amake/innosetup` images (which always use 
 | wine64 | `amake/wine:wine64-bookworm` | `6.2.2` | `ghcr.io/nhermosilla14/innosetup-container-x64:6.2.2` |
 
 # Future plans
-- Upgrade base images to Debian 12 (Bullseye) and/or Alpine 3.20.
+- Upgrade base images to a newer Debian release and/or Alpine Linux.
 - Add support for other architectures (e.g. arm64).
 
 # Important notes
-Be aware that depending on how you mount your code into the container, files referenced by the setup script may or may not be "visible" within the container. You probably want to make sure all referenced files are at or below the directory your script is in. The same applies to the output. The workdir is setup as /app, so it is a good idea to mount the root of your project over there.
+Be aware that, depending on how you mount your code into the container, files referenced by the setup script may or may not be visible within the container. Make sure all referenced files are at or below the directory containing your script. The same applies to the output. The working directory is set to `/app`, so it is a good idea to mount your project root there.
 
 # Known issues
 ## Wine, X11-related warnings and errors
-This image pulls some tricks to get wine and Inno Setup installed and working
-headlessly. This results in some yucky looking logs, but it seems to work
-anyway.
+This image uses several workarounds to install and run Wine and Inno Setup
+headlessly. This results in some noisy logs, but the image works as expected.
 
 
 # Licenses

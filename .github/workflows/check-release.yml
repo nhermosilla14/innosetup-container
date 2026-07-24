@@ -16,12 +16,9 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-
-      - name: Install skopeo
-        run: sudo apt-get update && sudo apt-get install --yes skopeo
 
       - name: Check latest releases and dispatch builds
         env:

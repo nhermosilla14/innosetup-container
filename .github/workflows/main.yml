@@ -11,6 +11,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   IMAGE_REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
@@ -27,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout Push to Registry action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Determine Inno Setup version
         id: semver
@@ -41,7 +45,7 @@ jobs:
     
       - name: Buildah Build
         id: build_image
-        uses: redhat-actions/buildah-build@v2
+        uses: redhat-actions/buildah-build@v3
         with:
           containerfiles: |
             ./Containerfile
@@ -52,31 +56,30 @@ jobs:
             WINEARCH=win32
           
       # Push the image to GHCR (Image Registry)
-      - name: Push To GHCR
-        uses: redhat-actions/push-to-registry@v2
-        id: push
-        with:
-          image: ${{ steps.build_image.outputs.image }}
-          tags: ${{ steps.build_image.outputs.tags }}
-          registry: ${{ env.IMAGE_REGISTRY }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-          extra-args: |
-            --disable-content-trust
+      - name: Push image to GHCR
+        env:
+          REGISTRY_PASSWORD: ${{ env.REGISTRY_PASSWORD }}
+        run: |
+          printf '%s' "$REGISTRY_PASSWORD" | podman login "$IMAGE_REGISTRY" \
+            --username "$REGISTRY_USER" --password-stdin
+          podman push --disable-content-trust \
+            "${{ steps.build_image.outputs.image }}:${{ github.sha }}" \
+            "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:${{ github.sha }}"
+
+      - name: Add version and latest tags
+        run: |
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:${{ steps.semver.outputs.semver }}
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x86:latest
 
       - name: Push version and latest tags
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.build_image.outputs.image }}
-          tags: latest ${{ steps.semver.outputs.semver }}
-          registry: ${{ env.IMAGE_REGISTRY }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-          extra-args: |
-            --disable-content-trust
+        run: |
+          podman push --disable-content-trust \
+            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:${{ steps.semver.outputs.semver }}"
+          podman push --disable-content-trust \
+            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x86:latest"
       - name: Echo outputs
         run: |
-          echo "${{ toJSON(steps.push.outputs) }}"
+          echo "Pushed x86 image tags"
 
   build_x64:
     name: Build and push x64 image
@@ -84,7 +87,7 @@ jobs:
 
     steps:
       - name: Checkout Push to Registry action
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Determine Inno Setup version
         id: semver
@@ -98,7 +101,7 @@ jobs:
     
       - name: Buildah Build
         id: build_image
-        uses: redhat-actions/buildah-build@v2
+        uses: redhat-actions/buildah-build@v3
         with:
           containerfiles: |
             ./Containerfile
@@ -109,28 +112,27 @@ jobs:
             WINEARCH=win64
           
       # Push the image to GHCR (Image Registry)
-      - name: Push To GHCR
-        uses: redhat-actions/push-to-registry@v2
-        id: push
-        with:
-          image: ${{ steps.build_image.outputs.image }}
-          tags: ${{ steps.build_image.outputs.tags }}
-          registry: ${{ env.IMAGE_REGISTRY }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-          extra-args: |
-            --disable-content-trust
+      - name: Push image to GHCR
+        env:
+          REGISTRY_PASSWORD: ${{ env.REGISTRY_PASSWORD }}
+        run: |
+          printf '%s' "$REGISTRY_PASSWORD" | podman login "$IMAGE_REGISTRY" \
+            --username "$REGISTRY_USER" --password-stdin
+          podman push --disable-content-trust \
+            "${{ steps.build_image.outputs.image }}:${{ github.sha }}" \
+            "docker://${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:${{ github.sha }}"
+
+      - name: Add version and latest tags
+        run: |
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:${{ steps.semver.outputs.semver }}
+          podman tag ${{ steps.build_image.outputs.image }}:${{ github.sha }} ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}-x64:latest
 
       - name: Push version and latest tags
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.build_image.outputs.image }}
-          tags: latest ${{ steps.semver.outputs.semver }}
-          registry: ${{ env.IMAGE_REGISTRY }}
-          username: ${{ env.REGISTRY_USER }}
-          password: ${{ env.REGISTRY_PASSWORD }}
-          extra-args: |
-            --disable-content-trust
+        run: |
+          podman push --disable-content-trust \
+            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:${{ steps.semver.outputs.semver }}"
+          podman push --disable-content-trust \
+            "${IMAGE_REGISTRY}/${IMAGE_NAME}-x64:latest"
       - name: Echo outputs
         run: |
-          echo "${{ toJSON(steps.push.outputs) }}"
+          echo "Pushed x64 image tags"
